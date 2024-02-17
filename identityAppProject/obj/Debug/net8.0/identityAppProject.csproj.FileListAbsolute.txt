@@ -140,3 +140,4 @@ C:\Users\jesus\source\repos\identityAppProject\identityAppProject\obj\Debug\net8
 C:\Users\jesus\source\repos\identityAppProject\identityAppProject\obj\Debug\net8.0\identityAppProject.pdb
 C:\Users\jesus\source\repos\identityAppProject\identityAppProject\obj\Debug\net8.0\identityAppProject.genruntimeconfig.cache
 C:\Users\jesus\source\repos\identityAppProject\identityAppProject\obj\Debug\net8.0\ref\identityAppProject.dll
+C:\Users\jesus\source\repos\identityAppProject\identityAppProject\obj\Debug\net8.0\identityAppProject.sourcelink.json
