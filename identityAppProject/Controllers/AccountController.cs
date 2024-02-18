@@ -27,6 +27,12 @@ namespace identityAppProject.Controllers
             return View(loginViewModel);
         }
 
+        [HttpGet]
+        public IActionResult ForgotPassword()
+        {
+            return View();
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginViewModel loginViewModel, string returnUrl)
@@ -37,6 +43,10 @@ namespace identityAppProject.Controllers
                 if (result.Succeeded)
                 {
                     return RedirectToAction("Index", "Home");
+                }
+                if (result.IsLockedOut)
+                {
+                    return View("Lockout");
                 }
                 else
                 {

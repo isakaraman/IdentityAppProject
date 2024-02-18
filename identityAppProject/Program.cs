@@ -9,6 +9,14 @@ builder.Services.AddDbContext<ApplicationDbContext>(e =>
 e.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddIdentity<IdentityUser, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
 builder.Services.AddControllersWithViews();
+builder.Services.Configure<IdentityOptions>(opt =>
+{
+    opt.Password.RequiredLength = 5;
+    opt.Password.RequireLowercase = true;
+    opt.Lockout.DefaultLockoutTimeSpan=TimeSpan.FromSeconds(5);
+    opt.Lockout.MaxFailedAccessAttempts = 5;
+    opt.SignIn.RequireConfirmedAccount = true;
+});
 
 var app = builder.Build();
 
