@@ -64,6 +64,33 @@ namespace identityAppProject.Controllers
             return View();
         }
 
+        [HttpGet]
+        public IActionResult ResetPoassword(string code = null)
+        {
+            return code==null ? View("Error") : View();
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel resetPasswordViewModel)
+        {
+            if (ModelState.IsValid)
+            {
+                var user=await _userManager.FindByEmailAsync(resetPasswordViewModel.Email);
+                if (user == null)
+                {
+                    ModelState.AddModelError("Email", "User Not Found");
+                    return View();
+                }
+                var result= await _userManager.ResetPasswordAsync(user,resetPasswordViewModel.Code,resetPasswordViewModel.Password);
+                if (result.Succeeded)
+                {
+                    return RedirectToAction("ResetPasswordConfirmation");
+                }
+            }
+            return View(resetPasswordViewModel);
+        }
+
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginViewModel loginViewModel, string returnUrl)
