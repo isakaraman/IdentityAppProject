@@ -1,8 +1,11 @@
 ﻿using identityAppProject.Interfaces;
 using identityAppProject.Models;
 using identityAppProject.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Security.Claims;
 
 namespace identityAppProject.Controllers
 {
@@ -10,14 +13,50 @@ namespace identityAppProject.Controllers
     {
         public readonly UserManager<IdentityUser> _userManager;
         private readonly SignInManager<IdentityUser> _signInManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
         private readonly ISendGridEmail _sendGridEmail;
 
         public AccountController(UserManager<IdentityUser>userManager, SignInManager<IdentityUser>signInManager,
+            RoleManager<IdentityRole> roleManager,
             ISendGridEmail sendGridEmail)
         {
             _signInManager = signInManager;
             _sendGridEmail = sendGridEmail;
             _userManager = userManager;
+            _roleManager = roleManager;
+        }
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ExternalLoginConfirmation(ExternalLoginViewModel model, string? returnurl = null)
+        {
+            returnurl = returnurl ?? Url.Content("~/");
+
+            if (ModelState.IsValid)
+            {
+                //get the info about the user from external login provider
+                var info = await _signInManager.GetExternalLoginInfoAsync();
+                if (info == null)
+                {
+                    return View("Error");
+                }
+                var user = new AppUser { UserName = model.Email, Email = model.Email };
+                var result = await _userManager.CreateAsync(user);
+                if (result.Succeeded)
+                {
+                    await _userManager.AddToRoleAsync(user, "Pokemon");
+                    result = await _userManager.AddLoginAsync(user, info);
+                    if (result.Succeeded)
+                    {
+                        await _signInManager.SignInAsync(user, isPersistent: false);
+                        await _signInManager.UpdateExternalAuthenticationTokensAsync(info);
+                        return LocalRedirect(returnurl);
+                    }
+                }
+                ModelState.AddModelError("Email", "Error occured");
+            }
+            ViewData["ReturnUrl"] = returnurl;
+            return View(model);
         }
         public IActionResult Index()
         {
@@ -37,6 +76,51 @@ namespace identityAppProject.Controllers
         {
             return View();
         }
+
+        [HttpGet]
+        public async Task<IActionResult> ExternalLoginCallback(string returnurl = null, string remoteError = null)
+        {
+            if (remoteError != null)
+            {
+                ModelState.AddModelError(string.Empty, $"Error from external provider: {remoteError}");
+                return View(nameof(Login));
+            }
+            var info = await _signInManager.GetExternalLoginInfoAsync();
+            if (info == null)
+            {
+                return RedirectToAction(nameof(Login));
+            }
+
+            //Sign in the user with this external login provider, if the user already has a login.
+            var result = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false);
+            if (result.Succeeded)
+            {
+                //update any authentication tokens
+                await _signInManager.UpdateExternalAuthenticationTokensAsync(info);
+                return LocalRedirect(returnurl);
+            }
+            else
+            {
+                //If the user does not have account, then we will ask the user to create an account.
+                ViewData["ReturnUrl"] = returnurl;
+                ViewData["ProviderDisplayName"] = info.ProviderDisplayName;
+                var email = info.Principal.FindFirstValue(ClaimTypes.Email);
+                return View("ExternalLoginConfirmation", new ExternalLoginViewModel { Email = email });
+
+            }
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public IActionResult ExternalLogin(string provider, string returnurl = null)
+        {
+            //request a redirect to the external login provider
+            var redirecturl = Url.Action("ExternalLoginCallback", "Account", new { ReturnUrl = returnurl });
+            var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirecturl);
+            return Challenge(properties, provider);
+        }
+
 
         [HttpPost]
         public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
@@ -69,6 +153,7 @@ namespace identityAppProject.Controllers
         {
             return code==null ? View("Error") : View();
         }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ResetPassword(ResetPasswordViewModel resetPasswordViewModel)
@@ -97,7 +182,7 @@ namespace identityAppProject.Controllers
         {
             if(ModelState.IsValid)
             {
-                var result = await _signInManager.PasswordSignInAsync(loginViewModel.UserName, loginViewModel.Password, loginViewModel.RememberMe, lockoutOnFailure: true);
+                var result = await _signInManager.PasswordSignInAsync(loginViewModel.Email, loginViewModel.Password, loginViewModel.RememberMe, lockoutOnFailure: true);
                 if (result.Succeeded)
                 {
                     return RedirectToAction("Index", "Home");
@@ -115,36 +200,59 @@ namespace identityAppProject.Controllers
             return View(loginViewModel);
         }
 
-
+        [HttpGet]
         public async Task<IActionResult> Register(string? returnUrl = null)
         {
+            if(!await _roleManager.RoleExistsAsync("Pokemon"))
+            {
+                await _roleManager.CreateAsync(new IdentityRole("Pokemon"));
+                await _roleManager.CreateAsync(new IdentityRole("Trainer"));
+            }
+            List<SelectListItem> listItems=new List<SelectListItem>();
+            listItems.Add(new SelectListItem()
+            {
+                Value = "Pokemon",
+                Text = "Pokemon"
+            });
+            listItems.Add(new SelectListItem()
+            {
+                Value = "Trainer",
+                Text = "Trainer"
+            });
             RegisterViewModel registerViewModel = new RegisterViewModel();
+            registerViewModel.RoleList=listItems;
             registerViewModel.ReturnUrl= returnUrl;
             return View(registerViewModel);
         }
 
 
         [HttpPost]
-        public async Task<IActionResult> Register(RegisterViewModel registerViewModel,string? returnUrl=null)
+        public async Task<IActionResult> Register(RegisterViewModel registerViewModel, string? returnUrl = null)
         {
-            registerViewModel.ReturnUrl= returnUrl;
+            registerViewModel.ReturnUrl = returnUrl;
             returnUrl = returnUrl ?? Url.Content("~/");
             if (ModelState.IsValid)
             {
-                var user = new AppUser { Email = registerViewModel.Email,UserName=registerViewModel.UserName };
+                var user = new AppUser { Email = registerViewModel.Email, UserName = registerViewModel.UserName };
                 var result = await _userManager.CreateAsync(user, registerViewModel.Password);
                 if (result.Succeeded)
                 {
-                    await _signInManager.SignInAsync(user,isPersistent: false);
-
+                    if (registerViewModel.RoleSelected != null && registerViewModel.RoleSelected.Length > 0 && registerViewModel.RoleSelected == "Trainer")
+                    {
+                        await _userManager.AddToRoleAsync(user, "Trainer");
+                    }
+                    else
+                    {
+                        await _userManager.AddToRoleAsync(user, "Pokemon");
+                    }
+                    await _signInManager.SignInAsync(user, isPersistent: false);
                     return LocalRedirect(returnUrl);
                 }
-                ModelState.AddModelError("Email", "User could not be created. Password not unique enough");
-
+                ModelState.AddModelError("Password", "User could not be created. Password not unique enough");
             }
             return View(registerViewModel);
-
         }
+    
 
         [HttpPost]
         [ValidateAntiForgeryToken]
