@@ -11,12 +11,12 @@ namespace identityAppProject.Controllers
 {
     public class AccountController : Controller
     {
-        public readonly UserManager<IdentityUser> _userManager;
-        private readonly SignInManager<IdentityUser> _signInManager;
+        public readonly UserManager<AppUser> _userManager;
+        private readonly SignInManager<AppUser> _signInManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly ISendGridEmail _sendGridEmail;
 
-        public AccountController(UserManager<IdentityUser>userManager, SignInManager<IdentityUser>signInManager,
+        public AccountController(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager,
             RoleManager<IdentityRole> roleManager,
             ISendGridEmail sendGridEmail)
         {

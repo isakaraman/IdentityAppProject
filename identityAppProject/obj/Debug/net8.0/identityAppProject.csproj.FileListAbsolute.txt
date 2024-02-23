@@ -141,3 +141,8 @@ C:\Users\jesus\source\repos\identityAppProject\identityAppProject\obj\Debug\net8
 C:\Users\jesus\source\repos\identityAppProject\identityAppProject\obj\Debug\net8.0\identityAppProject.genruntimeconfig.cache
 C:\Users\jesus\source\repos\identityAppProject\identityAppProject\obj\Debug\net8.0\ref\identityAppProject.dll
 C:\Users\jesus\source\repos\identityAppProject\identityAppProject\obj\Debug\net8.0\identityAppProject.sourcelink.json
+C:\Users\jesus\source\repos\identityAppProject\identityAppProject\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.Facebook.dll
+C:\Users\jesus\source\repos\identityAppProject\identityAppProject\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.Google.dll
+C:\Users\jesus\source\repos\identityAppProject\identityAppProject\bin\Debug\net8.0\Newtonsoft.Json.dll
+C:\Users\jesus\source\repos\identityAppProject\identityAppProject\bin\Debug\net8.0\SendGrid.dll
+C:\Users\jesus\source\repos\identityAppProject\identityAppProject\bin\Debug\net8.0\StarkbankEcdsa.dll
