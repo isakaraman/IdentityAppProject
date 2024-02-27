@@ -1,3 +1,4 @@
+using identityAppProject.Authorization;
 using identityAppProject.Data;
 using identityAppProject.Helpers;
 using identityAppProject.Interfaces;
@@ -15,6 +16,11 @@ builder.Services.AddIdentity<AppUser, IdentityRole>().AddEntityFrameworkStores<A
 builder.Services.AddControllersWithViews();
 builder.Services.AddTransient<ISendGridEmail, SendGridEmail>();
 builder.Services.Configure<AuthMessageSenderOptions>(builder.Configuration.GetSection("SendGrid"));
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("OnlyTrainerChecker", policy => policy.Requirements.Add(new OnlyTrainerAuthorization()));
+    options.AddPolicy("CheckNicknameTeddy", policy => policy.Requirements.Add(new NicknameRequirment("teddy")));
+});
 builder.Services.AddAuthentication()
     .AddFacebook(options =>
     {
